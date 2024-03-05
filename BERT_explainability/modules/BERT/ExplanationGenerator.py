@@ -22,12 +22,12 @@ class Generator:
         self.model = model
         self.model.eval()
 
-    def forward(self, input_ids, attention_mask):
-        return self.model(input_ids, attention_mask)
+    def forward(self, input_ids, attention_mask, token_type_ids):
+        return self.model(input_ids, attention_mask, token_type_ids)
 
-    def generate_LRP(self, input_ids, attention_mask,
+    def generate_LRP(self, input_ids, attention_mask, token_type_ids,
                      index=None, start_layer=11):
-        output = self.model(input_ids=input_ids, attention_mask=attention_mask)[0]
+        output = self.model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
         kwargs = {"alpha": 1}
 
         if index == None:
