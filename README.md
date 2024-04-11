@@ -127,14 +127,14 @@ Notice that you can use the `--neg` argument to run either positive or negative 
 
 Example:
 ```
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=./:$PYTHONPATH python3 BERT_rationale_benchmark/models/pipeline/bert_pipeline.py --data_dir data/movies/ --output_dir bert_models/movies/ --model_params BERT_params/movies_bert.json
+python BERT_rationale_benchmark/models/pipeline/capec_pipeline.py --data_dir data/capec/ --output_dir bert_models/capec/ --model_params BERT_params/capec_bert.json
 ```
 To control which algorithm to use for explanations change the `method` variable in `BERT_rationale_benchmark/models/pipeline/bert_pipeline.py` (Defaults to 'transformer_attribution' which is our method).
 Running this command will create a directory for the method in `bert_models/movies/<method_name>`.
 
 In order to run f1 test with k, run the following command:
 ```
-PYTHONPATH=./:$PYTHONPATH python3 BERT_rationale_benchmark/metrics.py --data_dir data/movies/ --split test --results bert_models/movies/<method_name>/identifier_results_k.json
+python BERT_rationale_benchmark/metrics.py --data_dir data/capec/ --split test --results bert_models/capec/ours/identifier_results_k.json
 ```
 
 Also, in the method directory there will be created `.tex` files containing the explanations extracted for each example. This corresponds to our visualizations in the supplementary.

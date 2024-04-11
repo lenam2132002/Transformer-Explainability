@@ -14,6 +14,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from transformers import BertTokenizer
+import sys
+sys.path.insert(1, 'D:\Bert_ex\Transformer-Explainability')
 from BERT_explainability.modules.BERT.ExplanationGenerator import Generator
 
 from BERT_rationale_benchmark.utils import (
@@ -121,12 +123,17 @@ def scores_per_word_from_scores_per_token(input, tokenizer, input_ids, scores_pe
         if start_idx >= len(score_per_char):
             break
         end_idx = end_idx + len(inp)
-        score_per_word.append(np.max(score_per_char[start_idx:end_idx]))
+        score_per_word.append(np.max([score.detach().cpu().numpy() for score in score_per_char[start_idx:end_idx]]))
 
         # TODO: DELETE
         words_from_chars.append(''.join(input_ids_chars[start_idx:end_idx]))
 
         start_idx = end_idx
+    
+    print(words_from_chars)
+    print(input[:len(words_from_chars)])
+    print(words)
+    print(tokenizer.convert_ids_to_tokens(input_ids))
 
     if (words_from_chars[:-1] != input[:len(words_from_chars)-1]):
         print(words_from_chars)
@@ -312,7 +319,9 @@ def main():
     epoch_data = {}
     if os.path.exists(epoch_save_file):
         logging.info(f'Restoring model from {model_save_file}')
-        evidence_classifier.load_state_dict(torch.load(model_save_file))
+        dict_nam = torch.load(model_save_file)
+        del dict_nam['bert.embeddings.position_ids']
+        evidence_classifier.load_state_dict(dict_nam)
         epoch_data = torch.load(epoch_save_file)
         start_epoch = epoch_data['epoch'] + 1
         # handle finishing because patience was exceeded or we didn't get the best final epoch
