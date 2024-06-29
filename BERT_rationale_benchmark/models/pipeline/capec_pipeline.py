@@ -276,7 +276,7 @@ def main():
     evidence_classifier_output_dir = os.path.join(save_dir, 'classifier')
     os.makedirs(save_dir, exist_ok=True)
     os.makedirs(evidence_classifier_output_dir, exist_ok=True)
-    model_save_file = os.path.join(evidence_classifier_output_dir, 'SecBert_6labels_balance.pt')
+    model_save_file = os.path.join(evidence_classifier_output_dir, 'best_model_raw_data.pt')
     epoch_save_file = os.path.join(evidence_classifier_output_dir, 'classifier_epoch_data.pt')
     
     
@@ -324,7 +324,7 @@ def main():
         # explainability
         explanations = Generator(test_classifier)
         explanations_orig_lrp = Generator(orig_lrp_classifier)
-        method = "ground_truth"
+        method = "transformer_attribution"
         method_folder = {"transformer_attribution": "ours", "partial_lrp": "partial_lrp", "last_attn": "last_attn",
                          "attn_gradcam": "attn_gradcam", "lrp": "lrp", "rollout": "rollout",
                          "ground_truth": "ground_truth", "generate_all": "generate_all"}
@@ -338,11 +338,13 @@ def main():
         os.makedirs(os.path.join(args.output_dir, method_folder[method]), exist_ok=True)
 
         result_files = []
-        for i in range(1,11,1):
-            result_files.append(open(os.path.join(args.output_dir, '{0}/identifier_results_{1}.json').format(method_folder[method], i), 'w'))
+        for i in range(1,6,1):
+            result_files.append(open(os.path.join(args.output_dir, '{0}/identifier_results_{1}.json').format(method_folder[method], i), 'a'))
 
         j = 0
         for batch_start in range(0, len(test), test_batch_size):
+            torch.cuda.memory_allocated()
+            torch.cuda.empty_cache() 
             batch_elements = test[batch_start:min(batch_start + test_batch_size, len(test))]
             print("---batch_elment----")
             print(batch_elements)
@@ -362,6 +364,7 @@ def main():
                 inp = documents[doc_name].lower()
                 classification = classifications[targets.item()]
                 is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
+                # is_classification_correct = 1 if preds[targets]
                 print(is_classification_correct)
                 if method == "ground_truth":
                     inp_cropped = tokenizer.convert_ids_to_tokens(input_ids[0])
@@ -374,8 +377,8 @@ def main():
                         end_idx = evidence.end_token
                         cam[start_idx:end_idx] = 1
                     generate(inp_cropped, cam,
-                             (os.path.join(args.output_dir, '{0}/visual_results_{1}.tex').format(method_folder[method],
-                                                                                                 j)), color="green")
+                             (os.path.join(args.output_dir, '{0}/{1}_GT_{2}_{3}.tex').format(method_folder[method],
+                                                                                                 j, classification, is_classification_correct)), color="green")
                     j = j + 1
                     break
                 text = tokenizer.convert_ids_to_tokens(input_ids[0])
@@ -398,22 +401,25 @@ def main():
                 j = j + 1
                 doc_name = extract_docid_from_dataset_element(s)
                 hard_rationales = []
-                for res, i in enumerate(range(1, 11, 1)):
-                    print("calculating top ", i)
-                    _, indices = cam.topk(k=i)
-                    for index in indices.tolist():
-                        hard_rationales.append({
-                            "start_token": index,
-                            "end_token": index+1
-                        })
-                    result_dict = {
-                        "annotation_id": doc_name,
-                        "rationales": [{
-                            "docid": doc_name,
-                            "hard_rationale_predictions": hard_rationales
-                        }],
-                    }
-                    result_files[res].write(json.dumps(result_dict) + "\n")
+                print("cam is: ", cam)
+                index_end = min(6, len(cam))
+                if(len(cam) > 0):
+                    for res, i in enumerate(range(1, index_end, 1)):
+                        print("calculating top ", i)
+                        _, indices = cam.topk(k=i)
+                        for index in indices.tolist():
+                            hard_rationales.append({
+                                "start_token": index,
+                                "end_token": index+1
+                            })
+                        result_dict = {
+                            "annotation_id": doc_name,
+                            "rationales": [{
+                                "docid": doc_name,
+                                "hard_rationale_predictions": hard_rationales
+                            }],
+                        }
+                        result_files[res].write(json.dumps(result_dict) + "\n")
 
         for i in range(len(result_files)):
             result_files[i].close()

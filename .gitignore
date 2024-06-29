@@ -9,5 +9,7 @@ baselines/ViT/visualizations/
 bert_models/
 data/movies/
 *.pt
-*.ipynb
+data/capec
+tool/
+check_log.py
 

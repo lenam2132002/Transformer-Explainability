@@ -28,6 +28,7 @@ class Generator:
     def generate_LRP(self, input_ids, attention_mask,
                      index=None, start_layer=11):
         output = self.model(input_ids=input_ids, attention_mask=attention_mask)[0]
+        print(output)
         kwargs = {"alpha": 1}
 
         if index == None:
@@ -37,7 +38,11 @@ class Generator:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        one_hot = torch.sum(one_hot.cuda() * output)
+        # if index = 'os command injection', mutiply it with output and % data
+        if index == 5:
+            one_hot = torch.sum(one_hot.cuda() * output * 2)
+        else:
+            one_hot = torch.sum(one_hot.cuda() * output)
 
         self.model.zero_grad()
         one_hot.backward(retain_graph=True)
