@@ -1,4 +1,4 @@
-## Reproducing results on BERT
+## Reproducing results on SecBERT
 
 1. Download the pretrained weights:
 
